@@ -1,3 +1,5 @@
+Note: This was from a base code provided to me. I, however had some problems with git and didn't get a lot of time to work on this, so I somehow pushed everything and some things might not look right.
+
 # Introduction to Computer Graphics (CS7.302, IIIT Hyderabad)
 This is the base code that is to be used for all assignments in the above course. <br>
 Some sample scenes are given in the <a href="https://github.com/cs7-302-graphics/scenes">cs7-302-graphics/scenes</a> repo.
