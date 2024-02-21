@@ -26,12 +26,12 @@ struct Interaction {
     bool didIntersect = false;
 
     Vector3f toWorld(Vector3f w) {
-        // TODO: Implement this
-        return Vector3f(0, 0, 0);
+        // DONE?: Implement this
+        return w.x * a + w.y * b + w.z * c;
     }
 
     Vector3f toLocal(Vector3f w) {
-        // TODO: Implement this
-        return Vector3f(0, 0, 0);
+        // DONE?: Implement this
+        return Vector3f(Dot(a, w), Dot(b, w), Dot(c, w));
     }
 };

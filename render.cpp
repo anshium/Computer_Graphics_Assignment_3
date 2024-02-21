@@ -11,16 +11,44 @@ long long Integrator::render()
     auto startTime = std::chrono::high_resolution_clock::now();
     for (int x = 0; x < this->scene.imageResolution.x; x++) {
         for (int y = 0; y < this->scene.imageResolution.y; y++) {
+
+            // Vector3f result = Vector3f(0, 0, 0);
+            // for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
+            //     // Phele ham ye dekh rahen hain ki camera wali ray kahin intersect hui?
+            //     Ray cameraRay = this->scene.camera.generateRay(x, y);
+            //     Interaction si = this->scene.rayIntersect(cameraRay);
+            //     // Agar intersect hui to ham dekhenge ki kahan intersect hui.
+
+            //     if(si.didIntersect){
+            //         // wahan se ham light ko sample karenge aur ek ray banayenge
+            //         Vector3f radiance;
+            //         LightSample ls;
+
+            //         for(Light &light : this->scene.lights){
+            //             std::tie(radiance, ls) = light.sample(&si);
+            //             // aur dekhenge ki kisi light se intersect kiya ki nahi
+
+            //             // Iske liye, phele ham shadow ray banayenge
+            //             Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
+
+
+                    
+            //         }
+
+
+            //         // Agar light source se kiya, to sahi hai, tab ham shade kardenge equation (2) ke hisaab se.
+
+            //         // ye karke dekhta hun, isme shadow ray ki kahani nahi hai, I mean hai par waisi wali shadow ray nahi shayad
+            //     }
+            // }
+
+
+
             Vector3f result(0, 0, 0);
             for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
                 Ray cameraRay = this->scene.camera.generateRay(x, y);
                 Interaction si = this->scene.rayIntersect(cameraRay);
 
-                if(x == 500 && y == 1000){
-                    Interaction a = this->scene.rayEmitterIntersect(cameraRay);
-                    if(a.didIntersect)
-                    std::cout << "Intersected" << std::endl;
-                }
                 if (si.didIntersect) {
                     Vector3f radiance;
                     LightSample ls;
@@ -31,7 +59,9 @@ long long Integrator::render()
                         Interaction siShadow = this->scene.rayIntersect(shadowRay);
 
                         if (!siShadow.didIntersect || siShadow.t > ls.d) {
-                            result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * radiance * std::abs(Dot(si.n, ls.wo)) + si.emissiveColor;
+                            if(this->scene.rayEmitterIntersect(shadowRay).didIntersect){
+                                result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * radiance * std::abs(Dot(si.n, ls.wo)) + siShadow.emissiveColor;
+                            }
                         }
                     }
                 }
@@ -45,6 +75,7 @@ long long Integrator::render()
 }
 
 int spp;
+int sampling_method;
 
 int main(int argc, char **argv)
 {
@@ -56,6 +87,7 @@ int main(int argc, char **argv)
 
     Integrator rayTracer(scene);
     spp = atoi(argv[3]);
+    sampling_method = atoi(argv[4]);
     auto renderTime = rayTracer.render();
     
     std::cout << "Render Time: " << std::to_string(renderTime / 1000.f) << " ms" << std::endl;

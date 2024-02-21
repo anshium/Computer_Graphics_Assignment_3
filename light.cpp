@@ -44,6 +44,16 @@ std::pair<Vector3f, LightSample> Light::sample(Interaction *si) {
         case LightType::AREA_LIGHT:
             // TODO: Implement this
             
+            radiance = this->radiance;
+            Vector2f u = Vector2f(next_float(), next_float());
+            
+            float theta = u[0] * M_PI;
+            float phi   = (u[1] * M_PI * 2) - M_PI;
+
+            ls.wo = Normalize(Vector3f(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)));
+
+            ls.d = ls.wo.Length();
+
             break;
     }
     return { radiance, ls };
@@ -54,7 +64,7 @@ Interaction Light::intersectLight(Ray *ray) {
     memset(&si, 0, sizeof(si));
 
     if (type == LightType::AREA_LIGHT) {
-        // TODO: Implement this
+        // DONE: Implement this
 
         // First check ray plane intersection
         float dDotN = Dot(ray->d, this->normal);

@@ -387,10 +387,27 @@ void Surface::intersectBVH(uint32_t nodeIdx, Ray& ray, Interaction& si)
                 si.bsdf = &this->bsdf;
 
                 // TODO: Obtain the ONB and store in interaction here
+                
+                Vector3f tangent, bitangent;
+                if (std::abs(normal.x) > std::abs(normal.y)) {
+                    tangent = Normalize(Vector3f(-normal.z, 0.0f, normal.x));
+                } else {
+                    tangent = Normalize(Vector3f(0.0f, normal.z, -normal.y));
+                }
+                bitangent = Cross(normal, tangent);
+
+                // Here is the tangent
+                si.a = tangent;
+
+                // Here is the bi-tangent
+                si.a = bitangent;
+                
+                // Here is the normal
+                si.c = normal;
 
                 // Set the view direction in local coordinates
                 // TODO: Uncomment this after implementing ONB
-                // si.wi = si.toLocal(-ray.d);
+                si.wi = si.toLocal(-ray.d);
             }
         }
     }

@@ -17,6 +17,7 @@
 #define M_PI 3.14159263f
 
 extern int spp;
+extern int sampling_method;
 
 struct Ray {
     Vector3f o, d;
