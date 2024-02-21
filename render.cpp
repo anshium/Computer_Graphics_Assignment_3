@@ -29,11 +29,15 @@ long long Integrator::render()
                             // aur dekhenge ki kisi light se intersect kiya ki nahi
 
                             // Iske liye, phele ham shadow ray banayenge
-                            Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
-                            Interaction siSR = this->scene.rayIntersect(shadowRay);
+                            Ray lightRay(si.p + 1e-3 * si.n, ls.wo);
+                            Interaction siLR = light.intersectLight(&lightRay);
 
-                            if(!siSR.didIntersect){
-                                result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * radiance * std::abs(Dot(si.n, ls.wo)) + this->scene.rayEmitterIntersect(shadowRay).emissiveColor;
+                            if(siLR.didIntersect){
+                                Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
+                                Interaction siSR = this->scene.rayIntersect(shadowRay);
+                                if(!siSR.didIntersect || (siSR.p - si.p).Length() > (siLR.p - si.p).Length()){
+                                    result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo)) + si.emissiveColor;
+                                }
                             }
                         }
                     }
