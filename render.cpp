@@ -13,42 +13,47 @@ long long Integrator::render()
         for (int y = 0; y < this->scene.imageResolution.y; y++) {
 
             Vector3f result = Vector3f(0, 0, 0);
-                // Phele ham ye dekh rahen hain ki camera wali ray kahin intersect hui?
-                Ray cameraRay = this->scene.camera.generateRay(x, y);
-                Interaction si = this->scene.rayIntersect(cameraRay);
-                // Agar intersect hui to ham dekhenge ki kahan intersect hui.
+            // Phele ham ye dekh rahen hain ki camera wali ray kahin intersect hui?
+            Ray cameraRay = this->scene.camera.generateRay(x, y);
+            Interaction si = this->scene.rayIntersect(cameraRay);
+            // Agar intersect hui to ham dekhenge ki kahan intersect hui.
 
-                if(si.didIntersect){
-                    // wahan se ham light ko sample karenge aur ek ray banayenge
-                    Vector3f radiance;
-                    LightSample ls;
+            Interaction lsi = this->scene.rayEmitterIntersect(cameraRay);
 
-                    for(Light &light : this->scene.lights){
-                        for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
-                            std::tie(radiance, ls) = light.sample(&si);
-                            // aur dekhenge ki kisi light se intersect kiya ki nahi
+            if(si.didIntersect){
+                // wahan se ham light ko sample karenge aur ek ray banayenge
+                Vector3f radiance;
+                LightSample ls;
 
-                            // Iske liye, phele ham shadow ray banayenge
-                            Ray lightRay(si.p + 1e-3 * si.n, ls.wo);
-                            Interaction siLR = light.intersectLight(&lightRay);
+                for(Light &light : this->scene.lights){
+                    for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
+                        std::tie(radiance, ls) = light.sample(&si);
+                        // aur dekhenge ki kisi light se intersect kiya ki nahi
 
-                            if(siLR.didIntersect){
-                                Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
-                                Interaction siSR = this->scene.rayIntersect(shadowRay);
-                                if(!siSR.didIntersect || (siSR.p - si.p).Length() > (siLR.p - si.p).Length()){
-                                    result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo)) + si.emissiveColor;
-                                }
+                        // Iske liye, phele ham shadow ray banayenge
+                        Ray lightRay(si.p + 1e-3 * si.n, ls.wo);
+                        Interaction siLR = light.intersectLight(&lightRay);
+
+                        if(siLR.didIntersect){
+                            Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
+                            Interaction siSR = this->scene.rayIntersect(shadowRay);
+                            if(!siSR.didIntersect || (siSR.p - si.p).Length() > (siLR.p - si.p).Length()){
+                                result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo)); 
                             }
                         }
                     }
-                    this->outputImage.writePixelColor(result * (2 * M_PI) / spp, x, y);
+                }
 
-                    // Agar light source se kiya, to sahi hai, tab ham shade kardenge equation (2) ke hisaab se.
+                // Agar light source se kiya, to sahi hai, tab ham shade kardenge equation (2) ke hisaab se.
 
-                    // ye karke dekhta hun, isme shadow ray ki kahani nahi hai, I mean hai par waisi wali shadow ray nahi shayad
-            }
+                // ye karke dekhta hun, isme shadow ray ki kahani nahi hai, I mean hai par waisi wali shadow ray nahi shayad
+                }
+                if(lsi.didIntersect){
+                    result += lsi.emissiveColor;
+                }
 
 
+                this->outputImage.writePixelColor(result * (2 * M_PI) / spp, x, y);
             // Vector3f result(0, 0, 0);
             // for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
             //     Ray cameraRay = this->scene.camera.generateRay(x, y);
