@@ -47,8 +47,8 @@ std::pair<Vector3f, LightSample> Light::sample(Interaction *si) {
             radiance = this->radiance;
             Vector2f u = Vector2f(next_float(), next_float());
             
-            float theta = u[0] * M_PI;
-            float phi   = (u[1] * M_PI * 2) - M_PI;
+            float theta = M_PI / 2 * next_float();
+            float phi   = 2 * M_PI * next_float();
 
             ls.wo = Normalize(Vector3f(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)));
 
