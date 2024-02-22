@@ -51,3 +51,11 @@ struct BVHNode {
     uint32_t left = 0, right = 0;
     uint32_t firstPrim = 0, primCount = 0;
 };
+
+enum SamplingMethod{
+    UniformHemisphereSampling = 0,
+    CosineWeightedSampling = 1,
+    LightSampling = 2
+};
+
+#define NUM_ANTI_ALIASING_SAMPLES 32

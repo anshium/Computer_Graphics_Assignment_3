@@ -24,6 +24,21 @@ Light::Light(LightType type, nlohmann::json config) {
     this->type = type;
 }
 
+Vector2f ConcentricSampleDisk(Vector2f random_numbers){
+    Vector2f uOffset = 2.f * random_numbers - Vector2f(1, 1);
+    if (uOffset.x == 0 && uOffset.y == 0)
+           return Vector2f(0, 0);
+    float theta, r;
+    if (std::abs(uOffset.x) > std::abs(uOffset.y)) {
+        r = uOffset.x;
+        theta = M_PI_4 * (uOffset.y / uOffset.x);
+    } else {
+        r = uOffset.y;
+        theta = M_PI_2 - M_PI_4 * (uOffset.x / uOffset.y);
+    }
+    return r * Vector2f(std::cos(theta), std::sin(theta));
+}
+
 std::pair<Vector3f, LightSample> Light::sample(Interaction *si) {
     LightSample ls;
     memset(&ls, 0, sizeof(ls));
@@ -43,20 +58,57 @@ std::pair<Vector3f, LightSample> Light::sample(Interaction *si) {
             break;
         case LightType::AREA_LIGHT:
             // TODO: Implement this
-            
-            radiance = this->radiance;
-            Vector2f u = Vector2f(next_float(), next_float());
-            
-            float theta = M_PI / 2 * next_float();
-            float phi   = 2 * M_PI * next_float();
+            if(sampling_method == UniformHemisphereSampling){
+                radiance = this->radiance;
+                Vector2f u = Vector2f(next_float(), next_float());
+                
+                // float theta = M_PI / 2 * next_float();
+                // float phi   = 2 * M_PI * next_float();
 
-            ls.wo = Normalize(Vector3f(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)));
+                float theta = std::acos(next_float());
+                float phi = 2 * M_PI * next_float();
 
-            ls.d = ls.wo.Length();
+                ls.wo = Normalize(Vector3f(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)));
+
+                ls.d = ls.wo.Length();
+            }
+            else if(sampling_method == CosineWeightedSampling){
+                Vector2f d = ConcentricSampleDisk(Vector2f(next_float(), next_float()));
+                float z = std::sqrt(std::max((float)0, 1 - d.x * d.x - d.y * d.y));
+                ls.wo = Vector3f(d.x, d.y, z);
+                ls.d = ls.wo.Length();
+            }
+            else if(sampling_method == LightSampling){
+                // pick a random point on the area
+                Vector3f randomPoint = this->center + 2 * (next_float() - 0.5) * this->vx + 2 * (next_float() - 0.5) * this->vy;
+
+                ls.wo = Normalize(randomPoint - si->p);
+
+                if(Dot(this->normal, ls.wo) >= 0){
+                    ls.wo = Vector3f(0, 0, 0);
+                }
+
+                ls.d = (randomPoint - si->p).Length(); 
+            }
 
             break;
     }
     return { radiance, ls };
+}
+
+double Light::PDF(int sampling_method){
+    if(sampling_method == UniformHemisphereSampling){
+        return (1 / (2 * M_PI));
+    }
+    else if(sampling_method == CosineWeightedSampling){
+        return 1;
+    }
+    else if(sampling_method == LightSampling){
+        return 1 / (4 * this->vx.Length() * this->vy.Length());
+    }
+
+    // To handle non-accepted sampling_method
+    return 1;
 }
 
 Interaction Light::intersectLight(Ray *ray) {

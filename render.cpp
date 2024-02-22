@@ -11,49 +11,69 @@ long long Integrator::render()
     auto startTime = std::chrono::high_resolution_clock::now();
     for (int x = 0; x < this->scene.imageResolution.x; x++) {
         for (int y = 0; y < this->scene.imageResolution.y; y++) {
-
             Vector3f result = Vector3f(0, 0, 0);
-            // Phele ham ye dekh rahen hain ki camera wali ray kahin intersect hui?
-            Ray cameraRay = this->scene.camera.generateRay(x, y);
-            Interaction si = this->scene.rayIntersect(cameraRay);
-            // Agar intersect hui to ham dekhenge ki kahan intersect hui.
+            double PDF;
+            bool isLightPoint = false;
+            Vector3f lightemissivecolor;
+            for(int anti_aliasing_sample = 0; anti_aliasing_sample < NUM_ANTI_ALIASING_SAMPLES; anti_aliasing_sample++){
+                // Phele ham ye dekh rahen hain ki camera wali ray kahin intersect hui?
+                // for(int i = 0; i < 10; i++){
+                Ray cameraRay = this->scene.camera.generateRay(x, y);
+                Interaction si = this->scene.rayIntersect(cameraRay);
+                // Agar intersect hui to ham dekhenge ki kahan intersect hui.
 
-            Interaction lsi = this->scene.rayEmitterIntersect(cameraRay);
+                Interaction lsi = this->scene.rayEmitterIntersect(cameraRay);
 
-            if(si.didIntersect){
-                // wahan se ham light ko sample karenge aur ek ray banayenge
-                Vector3f radiance;
-                LightSample ls;
+                if(si.didIntersect){
+                    // wahan se ham light ko sample karenge aur ek ray banayenge
+                    Vector3f radiance;
+                    LightSample ls;
+                    
+                    for(Light &light : this->scene.lights){
+                        for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
+                            std::tie(radiance, ls) = light.sample(&si);
+                            // aur dekhenge ki kisi light se intersect kiya ki nahi
 
-                for(Light &light : this->scene.lights){
-                    for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
-                        std::tie(radiance, ls) = light.sample(&si);
-                        // aur dekhenge ki kisi light se intersect kiya ki nahi
+                            // Iske liye, phele ham shadow ray banayenge
+                            Ray lightRay(si.p + 1e-3 * si.n, ls.wo);
+                            Interaction siLR = light.intersectLight(&lightRay);
 
-                        // Iske liye, phele ham shadow ray banayenge
-                        Ray lightRay(si.p + 1e-3 * si.n, ls.wo);
-                        Interaction siLR = light.intersectLight(&lightRay);
-
-                        if(siLR.didIntersect){
-                            Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
-                            Interaction siSR = this->scene.rayIntersect(shadowRay);
-                            if(!siSR.didIntersect || (siSR.p - si.p).Length() > (siLR.p - si.p).Length()){
-                                result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo)); 
+                            if(siLR.didIntersect){
+                                Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
+                                Interaction siSR = this->scene.rayIntersect(shadowRay);
+                                if(!siSR.didIntersect || (siSR.p - si.p).Length() > (siLR.p - si.p).Length()){
+                                    if(sampling_method == UniformHemisphereSampling){
+                                        result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo));
+                                    }
+                                    else if(sampling_method == CosineWeightedSampling){
+                                        result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor;
+                                    } 
+                                    else if(sampling_method == LightSampling){
+                                        result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo)) * std::abs(Dot(Normalize(light.normal), -ls.wo)) / (ls.d * ls.d);
+                                    }
+                                }
                             }
+                            if(lsi.didIntersect){
+                                isLightPoint = true;
+                                lightemissivecolor = lsi.emissiveColor;
+                            }
+                        PDF = light.PDF(sampling_method);
                         }
                     }
                 }
-
                 // Agar light source se kiya, to sahi hai, tab ham shade kardenge equation (2) ke hisaab se.
 
                 // ye karke dekhta hun, isme shadow ray ki kahani nahi hai, I mean hai par waisi wali shadow ray nahi shayad
-                }
-                if(lsi.didIntersect){
-                    result += lsi.emissiveColor;
-                }
+            }
 
-
-                this->outputImage.writePixelColor(result * (2 * M_PI) / spp, x, y);
+            // Could have built this into the formula, but thought to do the following
+            if(isLightPoint){
+                result = lightemissivecolor;
+                this->outputImage.writePixelColor(result, x, y);
+            }
+            else{
+                this->outputImage.writePixelColor(result * (1 / PDF) / spp / NUM_ANTI_ALIASING_SAMPLES, x, y);
+            }
             // Vector3f result(0, 0, 0);
             // for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
             //     Ray cameraRay = this->scene.camera.generateRay(x, y);

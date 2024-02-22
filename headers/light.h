@@ -50,7 +50,17 @@ class Light {
          */
         Interaction intersectLight(Ray *ray);
 
-    private:
+        /**
+         * Return the probabality density function (PDF) value (only for constant PDFs).
+         * 
+         * \param sampling_method
+         * The sampling method chosen
+         * 
+         * \return pdf
+         * Constant PDF Value
+        */
+        double PDF(int sampling_method);
+    // private:
         LightType type;
 
         // Applicable only for point lights.
