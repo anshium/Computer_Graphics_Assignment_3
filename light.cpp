@@ -27,7 +27,7 @@ Light::Light(LightType type, nlohmann::json config) {
 Vector2f ConcentricSampleDisk(Vector2f random_numbers){
     Vector2f uOffset = 2.f * random_numbers - Vector2f(1, 1);
     if (uOffset.x == 0 && uOffset.y == 0)
-           return Vector2f(0, 0);
+        return Vector2f(0, 0);
     float theta, r;
     if (std::abs(uOffset.x) > std::abs(uOffset.y)) {
         r = uOffset.x;
@@ -73,9 +73,21 @@ std::pair<Vector3f, LightSample> Light::sample(Interaction *si) {
                 ls.d = ls.wo.Length();
             }
             else if(sampling_method == CosineWeightedSampling){
-                Vector2f d = ConcentricSampleDisk(Vector2f(next_float(), next_float()));
-                float z = std::sqrt(std::max((float)0, 1 - d.x * d.x - d.y * d.y));
-                ls.wo = Vector3f(d.x, d.y, z);
+                radiance = this->radiance;
+                Vector2f u = Vector2f(next_float(), next_float());
+                
+                // float theta = M_PI / 2 * next_float();
+                // float phi   = 2 * M_PI * next_float();
+
+                float theta = std::acos(std::sqrt(1 - next_float()));
+                float phi = 2 * M_PI * next_float();
+
+                ls.wo = Normalize(Vector3f(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)));
+
+                if(Dot(this->normal, ls.wo) >= 0){
+                    ls.wo = Vector3f(0, 0, 0);
+                }
+
                 ls.d = ls.wo.Length();
             }
             else if(sampling_method == LightSampling){
@@ -101,7 +113,7 @@ double Light::PDF(int sampling_method){
         return (1 / (2 * M_PI));
     }
     else if(sampling_method == CosineWeightedSampling){
-        return 1;
+        return M_PI;
     }
     else if(sampling_method == LightSampling){
         return 1 / (4 * this->vx.Length() * this->vy.Length());
@@ -137,11 +149,18 @@ Interaction Light::intersectLight(Ray *ray) {
             Vector3f vy_to_p = si.p - this->center;
 
             float vx_proj = std::abs(Dot(vx_to_p, this->vx) / (this->vx).LengthSquared());
-            float vy_proj = std::abs(Dot(vy_to_p, this->vy) / (this->vy).LengthSquared()); 
+            float vy_proj = std::abs(Dot(vy_to_p, this->vy) / (this->vy).LengthSquared());
 
-            if (vx_proj >= 0.f && vx_proj <= 1.f && vy_proj >= 0.f && vy_proj <= 1.f) {
+            if (vx_proj > 0.f && vx_proj < 1.f && vy_proj > 0.f && vy_proj < 1.f) {
                 si.didIntersect = true;
                 si.emissiveColor = this->radiance;
+                
+                int value = Dot(ray->d, si.n);
+                if(value < 0){
+                    si.didIntersect = false;
+                    si.emissiveColor = Vector3f(0, 0, 0);
+                }
+
             } else {
                 si.didIntersect = false;
             }

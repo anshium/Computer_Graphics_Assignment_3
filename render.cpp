@@ -11,10 +11,29 @@ long long Integrator::render()
     auto startTime = std::chrono::high_resolution_clock::now();
     for (int x = 0; x < this->scene.imageResolution.x; x++) {
         for (int y = 0; y < this->scene.imageResolution.y; y++) {
+            /** For the light intersection part **/
             Vector3f result = Vector3f(0, 0, 0);
             double PDF;
             bool isLightPoint = false;
             Vector3f lightemissivecolor;
+
+            Vector3f pixelPoint = this->scene.camera.upperLeft + (0.5 * this->scene.camera.pixelDeltaU + 0.5 * this->scene.camera.pixelDeltaV);
+            pixelPoint = pixelPoint + x * this->scene.camera.pixelDeltaU + y * this->scene.camera.pixelDeltaV;
+
+            Vector3f direction = Normalize(pixelPoint - this->scene.camera.from);
+
+            Ray a = Ray(this->scene.camera.from, direction);
+            Interaction lsi = this->scene.rayEmitterIntersect(a);
+            if(lsi.didIntersect){
+                isLightPoint = true;
+                result += lsi.emissiveColor;
+                this->outputImage.writePixelColor(result, x, y);
+                continue;
+
+                // Eech, with all this drama, the light spilling got fixed.
+            }
+            /* Light intersection part ends*/
+
             for(int anti_aliasing_sample = 0; anti_aliasing_sample < NUM_ANTI_ALIASING_SAMPLES; anti_aliasing_sample++){
                 // Phele ham ye dekh rahen hain ki camera wali ray kahin intersect hui?
                 // for(int i = 0; i < 10; i++){
@@ -22,7 +41,6 @@ long long Integrator::render()
                 Interaction si = this->scene.rayIntersect(cameraRay);
                 // Agar intersect hui to ham dekhenge ki kahan intersect hui.
 
-                Interaction lsi = this->scene.rayEmitterIntersect(cameraRay);
 
                 if(si.didIntersect){
                     // wahan se ham light ko sample karenge aur ek ray banayenge
@@ -36,7 +54,7 @@ long long Integrator::render()
 
                             // Iske liye, phele ham shadow ray banayenge
                             Ray lightRay(si.p + 1e-3 * si.n, ls.wo);
-                            Interaction siLR = light.intersectLight(&lightRay);
+                            Interaction siLR = this->scene.rayEmitterIntersect(lightRay);
 
                             if(siLR.didIntersect){
                                 Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
@@ -53,10 +71,6 @@ long long Integrator::render()
                                     }
                                 }
                             }
-                            if(lsi.didIntersect){
-                                isLightPoint = true;
-                                lightemissivecolor = lsi.emissiveColor;
-                            }
                         PDF = light.PDF(sampling_method);
                         }
                     }
@@ -67,13 +81,13 @@ long long Integrator::render()
             }
 
             // Could have built this into the formula, but thought to do the following
-            if(isLightPoint){
-                result = lightemissivecolor;
-                this->outputImage.writePixelColor(result, x, y);
-            }
-            else{
-                this->outputImage.writePixelColor(result * (1 / PDF) / spp / NUM_ANTI_ALIASING_SAMPLES, x, y);
-            }
+            // if(isLightPoint){
+            //     this->outputImage.writePixelColor(result, x, y);
+            // }
+            // else{
+            //     this->outputImage.writePixelColor(result * (1 / PDF) / spp / NUM_ANTI_ALIASING_SAMPLES, x, y);
+            // }
+            this->outputImage.writePixelColor(result * (1 / PDF) / spp / NUM_ANTI_ALIASING_SAMPLES, x, y);
             // Vector3f result(0, 0, 0);
             // for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
             //     Ray cameraRay = this->scene.camera.generateRay(x, y);
