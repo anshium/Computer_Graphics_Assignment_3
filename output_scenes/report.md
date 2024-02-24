@@ -1,4 +1,9 @@
 # Report File
+
+## Question 1
+- Anti-Aliasing Samples = 1: `1804.340942 ms`
+- Anti-Aliasing Samples = 32: `55329.074219 ms`
+
 ## Question 3
 ### Method: `uniform_hemisphere_sampling` | SPP: `10` | Anti-Aliasing: `On`
 - Small:  `7075.812988 ms`

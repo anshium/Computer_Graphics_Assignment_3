@@ -13,7 +13,7 @@ long long Integrator::render()
         for (int y = 0; y < this->scene.imageResolution.y; y++) {
             /** For the light intersection part **/
             Vector3f result = Vector3f(0, 0, 0);
-            double PDF;
+            double PDF = 1.0;
             bool isLightPoint = false;
             Vector3f lightemissivecolor;
 
@@ -48,30 +48,45 @@ long long Integrator::render()
                     LightSample ls;
                     
                     for(Light &light : this->scene.lights){
-                        for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
-                            std::tie(radiance, ls) = light.sample(&si);
-                            // aur dekhenge ki kisi light se intersect kiya ki nahi
+                        if(light.type == AREA_LIGHT){
+                            for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){
+                                std::tie(radiance, ls) = light.sample(&si);
+                                // aur dekhenge ki kisi light se intersect kiya ki nahi
 
-                            // Iske liye, phele ham shadow ray banayenge
-                            Ray lightRay(si.p + 1e-3 * si.n, ls.wo);
-                            Interaction siLR = this->scene.rayEmitterIntersect(lightRay);
+                                // Iske liye, phele ham shadow ray banayenge
+                                Ray lightRay(si.p + 1e-3 * si.n, ls.wo);
+                                Interaction siLR = this->scene.rayEmitterIntersect(lightRay);
 
-                            if(siLR.didIntersect){
-                                Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
-                                Interaction siSR = this->scene.rayIntersect(shadowRay);
-                                if(!siSR.didIntersect || (siSR.p - si.p).Length() > (siLR.p - si.p).Length()){
-                                    if(sampling_method == UniformHemisphereSampling){
-                                        result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo));
-                                    }
-                                    else if(sampling_method == CosineWeightedSampling){
-                                        result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * M_PI;
-                                    } 
-                                    else if(sampling_method == LightSampling){
-                                        result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo)) * std::abs(Dot(Normalize(light.normal), -ls.wo)) / (ls.d * ls.d);
+                                if(siLR.didIntersect){
+                                    Ray shadowRay(si.p + 1e-3 * si.n, ls.wo);
+                                    Interaction siSR = this->scene.rayIntersect(shadowRay);
+                                    if(!siSR.didIntersect || (siSR.p - si.p).Length() > (siLR.p - si.p).Length()){
+                                        if(sampling_method == UniformHemisphereSampling){
+                                            result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo));
+                                        }
+                                        else if(sampling_method == CosineWeightedSampling){
+                                            result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * M_PI;
+                                        } 
+                                        else if(sampling_method == LightSampling){
+                                            result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo)) * std::abs(Dot(Normalize(light.normal), -ls.wo)) / (ls.d * ls.d);
+                                        }
                                     }
                                 }
+                                PDF = light.PDF(sampling_method);
                             }
-                        PDF = light.PDF(sampling_method);
+                        }
+                        else{
+                            std::tie(radiance, ls) = light.sample(&si);
+                        
+                            Ray shadowRay(si.p + 1e-3f * si.n, ls.wo);
+                            Interaction siShadow = this->scene.rayIntersect(shadowRay);
+
+                            if (!siShadow.didIntersect || siShadow.t > ls.d) {
+                                result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * radiance * std::abs(Dot(si.n, ls.wo)) + si.emissiveColor;
+                            }
+                            if(anti_aliasing_sample == NUM_ANTI_ALIASING_SAMPLES - 1){
+                                result = result * spp;
+                            }
                         }
                     }
                 }
@@ -87,6 +102,7 @@ long long Integrator::render()
             // else{
             //     this->outputImage.writePixelColor(result * (1 / PDF) / spp / NUM_ANTI_ALIASING_SAMPLES, x, y);
             // }
+            // this->outputImage.writePixelColor(result * (1 / PDF) / spp / NUM_ANTI_ALIASING_SAMPLES, x, y);
             this->outputImage.writePixelColor(result * (1 / PDF) / spp / NUM_ANTI_ALIASING_SAMPLES, x, y);
             // Vector3f result(0, 0, 0);
             // for(int sampling_iteration = 0; sampling_iteration < spp; sampling_iteration++){

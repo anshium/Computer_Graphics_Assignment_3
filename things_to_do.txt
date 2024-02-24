@@ -1,0 +1,5 @@
+Put Anti-Aliasing to the light.
+
+Change the cosine weighted things - Check if it works with the pbrt implementation for all scenes, else lite.
+
+Add directional light support
