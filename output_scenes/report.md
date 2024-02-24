@@ -36,3 +36,19 @@
 - Big:  `1530626.875000 ms`
 - Many:  `2251478.250000 ms`
 ### Method: `cosine_weighted_sampling` | SPP: `1000` | Anti-Aliasing: `On`
+
+## Report Questions
+
+### Question 1
+**Why can’t we render point and directional lights with uniform hemisphere sampling or cosine weighted sampling?**
+
+For both point and directional lights, the set of directions that would contribute to the final color and intensity of a pixel are definite and known.
+
+If we use uniform hemisphere sampling or cosine weighted sampling, we would be considering many directions that would not contribute to the the properties of the pixel being currently considered.
+
+This would take a much higher time (almost infinity) to converge than simply considering all the valid directions that the light can take. For point lights this would be the direction to the point light from the point of intersection and for directional lights, this would be the constant fixed direction.
+
+### Question 2
+**Why does the noise increase for the same number of samples in the case of uniform hemisphere and cosine weighted sampling as the size of the area light decreases?**
+
+The noise increases for the same number of samples in the case of uniform hemisphere and cosine sampling as a smaller number of rays hit the light when when the light's size is small. Consider a ray x. The ray had an associated direction `d`. In essense the number of directions that would intersect the light surface in the case of area light would be less.

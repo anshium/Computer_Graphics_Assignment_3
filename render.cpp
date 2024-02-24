@@ -64,7 +64,7 @@ long long Integrator::render()
                                         result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo));
                                     }
                                     else if(sampling_method == CosineWeightedSampling){
-                                        result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor;
+                                        result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * M_PI;
                                     } 
                                     else if(sampling_method == LightSampling){
                                         result += si.bsdf->eval(&si, si.toLocal(ls.wo)) * siLR.emissiveColor * std::abs(Dot(si.n, ls.wo)) * std::abs(Dot(Normalize(light.normal), -ls.wo)) / (ls.d * ls.d);

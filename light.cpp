@@ -79,7 +79,7 @@ std::pair<Vector3f, LightSample> Light::sample(Interaction *si) {
                 // float theta = M_PI / 2 * next_float();
                 // float phi   = 2 * M_PI * next_float();
 
-                float theta = std::acos(std::sqrt(1 - next_float()));
+                float theta = std::acos(std::sqrt(next_float()));
                 float phi = 2 * M_PI * next_float();
 
                 ls.wo = Normalize(Vector3f(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)));
@@ -109,14 +109,16 @@ std::pair<Vector3f, LightSample> Light::sample(Interaction *si) {
 }
 
 double Light::PDF(int sampling_method){
-    if(sampling_method == UniformHemisphereSampling){
-        return (1 / (2 * M_PI));
-    }
-    else if(sampling_method == CosineWeightedSampling){
-        return M_PI;
-    }
-    else if(sampling_method == LightSampling){
-        return 1 / (4 * this->vx.Length() * this->vy.Length());
+    if(this->type == AREA_LIGHT){
+        if(sampling_method == UniformHemisphereSampling){
+            return (1 / (2 * M_PI));
+        }
+        else if(sampling_method == CosineWeightedSampling){
+            return 1;   // PI added directly in the rendering equation.
+        }
+        else if(sampling_method == LightSampling){
+            return 1 / (4 * this->vx.Length() * this->vy.Length());
+        }
     }
 
     // To handle non-accepted sampling_method
