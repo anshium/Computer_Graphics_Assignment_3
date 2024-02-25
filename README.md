@@ -2,6 +2,8 @@ Note: This was from a base code provided to me. I, however had some problems wit
 
 Assumptions: The lights have Anti-Aliasing off. This was done to speed up the program. If required, I have to just move a couple of lines here and there to turn on the anti-aliasing of the light source.
 
+-- For assignment submission commit --
+
 # Introduction to Computer Graphics (CS7.302, IIIT Hyderabad)
 This is the base code that is to be used for all assignments in the above course. <br>
 Some sample scenes are given in the <a href="https://github.com/cs7-302-graphics/scenes">cs7-302-graphics/scenes</a> repo.
