@@ -79,16 +79,19 @@ std::pair<Vector3f, LightSample> Light::sample(Interaction *si) {
                 // float theta = M_PI / 2 * next_float();
                 // float phi   = 2 * M_PI * next_float();
 
-                float theta = std::acos(std::sqrt(next_float()));
-                float phi = 2 * M_PI * next_float();
+                Vector2f d = ConcentricSampleDisk(Vector2f(next_float(), next_float()));
+                float z = std::sqrt(std::max((float)0, 1 - d.x * d.x - d.y * d.y));
+                ls.wo = Vector3f(d.x, d.y, z);
+                ls.d = ls.wo.Length();
 
-                ls.wo = Normalize(Vector3f(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)));
+                // float theta = std::acos(std::sqrt(next_float()));
+                // float phi = 2 * M_PI * next_float();
+
+                // ls.wo = Normalize(Vector3f(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)));
 
                 if(Dot(this->normal, ls.wo) >= 0){
                     ls.wo = Vector3f(0, 0, 0);
                 }
-
-                ls.d = ls.wo.Length();
             }
             else if(sampling_method == LightSampling){
                 // pick a random point on the area

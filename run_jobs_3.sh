@@ -58,7 +58,3 @@ echo "Light Sampling"
 	sampling_method_name="light_sampling"
 	runQ3 $num_samples $sampling_method $sampling_method_name
 	echo "spp = $spp, Light Sampling Completed!"
-
-echo "Small UHS - spp = 10,000 job:"
-	./build/render ./scenes/Assignment\ 3/Question\ 3/small.json ./output_scenes_2/Question_3/$3/small_10000_spp.png $1 $2 | tee temp_output_file.txt
-	echo "- Small spp = 10000: " \`$(cat temp_output_file.txt | grep "Render" | awk '{print $((NF - 1)), "ms"}')\` >> $reportfile

@@ -1,0 +1,2 @@
+Render Time: 1004675.250000 ms
+Saved PNG: ./output_scenes_6/Question_3/cosine_weighted_sampling/many_30_spp.png
